@@ -2,12 +2,14 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
 
@@ -15,6 +17,7 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     setMessage('')
+    setShowForgotPassword(false)
 
     const supabase = createClient()
 
@@ -25,6 +28,12 @@ export default function LoginPage() {
 
     if (error) {
       setMessage(error.message)
+      const loweredMessage = error.message.toLowerCase()
+      const invalidCredentials =
+        loweredMessage.includes('invalid login credentials') ||
+        loweredMessage.includes('invalid email') ||
+        loweredMessage.includes('invalid password')
+      setShowForgotPassword(invalidCredentials)
     } else {
       router.push('/')
     }
@@ -33,47 +42,65 @@ export default function LoginPage() {
   }
 
   return (
-    <main style={{ maxWidth: '400px', margin: '100px auto', padding: '0 20px' }}>
-      <h1>Sign in</h1>
-      <form onSubmit={handleLogin}>
-        <div style={{ marginBottom: '12px' }}>
-          <label>Email</label><br />
+    <main style={{ maxWidth: '460px', margin: '72px auto', padding: '0 20px' }}>
+      <section style={{ border: '1px solid var(--card-border)', borderRadius: '16px', padding: '22px' }}>
+      <h1 style={{ fontSize: '30px', fontWeight: 800, marginBottom: '4px' }}>Sign in</h1>
+      <p style={{ color: 'var(--muted-foreground)', marginBottom: '18px' }}>Welcome back to your recipe community.</p>
+      <form onSubmit={handleLogin} style={{ display: 'grid', gap: '12px' }}>
+        <div>
+          <label style={{ display: 'block', marginBottom: '6px' }}>Email</label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            style={{ width: '100%', padding: '8px', marginTop: '4px' }}
+            style={{ width: '100%', padding: '10px' }}
           />
         </div>
-        <div style={{ marginBottom: '12px' }}>
-          <label>Password</label><br />
+        <div>
+          <label style={{ display: 'block', marginBottom: '6px' }}>Password</label>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            style={{ width: '100%', padding: '8px', marginTop: '4px' }}
+            style={{ width: '100%', padding: '10px' }}
           />
         </div>
+        {showForgotPassword && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <a href="/forgot-password" style={{ fontSize: '14px', color: '#dc2626', textDecoration: 'none' }}>
+              Forgot password?
+            </a>
+          </div>
+        )}
         <button
           type="submit"
           disabled={loading}
-          style={{ width: '100%', padding: '10px', cursor: 'pointer' }}
+          style={{
+            width: '100%',
+            padding: '11px',
+            cursor: 'pointer',
+            marginTop: '2px',
+            borderRadius: '10px',
+            border: '1px solid var(--brand)',
+            background: 'var(--brand)',
+            color: 'white',
+            fontWeight: 700,
+          }}
         >
           {loading ? 'Signing in...' : 'Sign in'}
         </button>
-        <div style={{ textAlign: 'right', marginTop: '8px' }}>
-          <a href="/forgot-password" style={{ fontSize: '14px', color: '#dc2626' }}>
-            Forgot password?
-          </a>
-        </div>
       </form>
       {message && (
         <p style={{ marginTop: '16px', color: 'red' }}>
           {message}
         </p>
       )}
+      <p style={{ marginTop: '14px', color: 'var(--muted-foreground)', fontSize: '14px' }}>
+        New to RecipeForum? <Link href="/signup">Create an account</Link>
+      </p>
+      </section>
     </main>
   )
 }

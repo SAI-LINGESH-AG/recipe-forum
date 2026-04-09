@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 export default function ForgotPasswordPage() {
@@ -29,26 +30,36 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main style={{ maxWidth: '400px', margin: '100px auto', padding: '0 20px' }}>
-      <h1>Forgot password</h1>
-      <p style={{ color: 'gray' }}>
+    <main style={{ maxWidth: '460px', margin: '72px auto', padding: '0 20px' }}>
+      <section style={{ border: '1px solid var(--card-border)', borderRadius: '16px', padding: '22px' }}>
+      <h1 style={{ fontSize: '30px', fontWeight: 800, marginBottom: '6px' }}>Forgot password</h1>
+      <p style={{ color: 'var(--muted-foreground)', marginBottom: '16px' }}>
         Enter your email and we will send you a reset link.
       </p>
-      <form onSubmit={handleForgotPassword}>
-        <div style={{ marginBottom: '12px' }}>
-          <label>Email</label><br />
+      <form onSubmit={handleForgotPassword} style={{ display: 'grid', gap: '12px' }}>
+        <div>
+          <label style={{ display: 'block', marginBottom: '6px' }}>Email</label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            style={{ width: '100%', padding: '8px', marginTop: '4px' }}
+            style={{ width: '100%', padding: '10px' }}
           />
         </div>
         <button
           type="submit"
           disabled={loading}
-          style={{ width: '100%', padding: '10px', cursor: 'pointer' }}
+          style={{
+            width: '100%',
+            padding: '11px',
+            cursor: 'pointer',
+            borderRadius: '10px',
+            border: '1px solid var(--brand)',
+            background: 'var(--brand)',
+            color: 'white',
+            fontWeight: 700,
+          }}
         >
           {loading ? 'Sending...' : 'Send reset link'}
         </button>
@@ -59,8 +70,9 @@ export default function ForgotPasswordPage() {
         </p>
       )}
       <p style={{ marginTop: '16px' }}>
-        <a href="/login">Back to sign in</a>
+        <Link href="/login">Back to sign in</Link>
       </p>
+      </section>
     </main>
   )
 }

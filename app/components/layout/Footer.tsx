@@ -3,19 +3,14 @@ export default function Footer() {
 
   return (
     <footer style={{
-      borderTop: '1px solid #e5e7eb',
-      padding: '24px',
+      padding: '30px 24px 28px',
       textAlign: 'center',
       fontSize: '14px',
-      color: 'gray',
+      color: 'var(--muted-foreground)',
       marginTop: 'auto',
+      opacity: 0.9,
     }}>
       <p>© {currentYear} Sai Lingesh. All rights reserved.</p>
-      <p style={{ marginTop: '8px' }}>
-        <a href="/" style={{ color: 'gray', textDecoration: 'none', marginRight: '16px' }}>Home</a>
-        <a href="/about" style={{ color: 'gray', textDecoration: 'none', marginRight: '16px' }}>About</a>
-        <a href="/privacy" style={{ color: 'gray', textDecoration: 'none' }}>Privacy Policy</a>
-      </p>
     </footer>
   )
 }

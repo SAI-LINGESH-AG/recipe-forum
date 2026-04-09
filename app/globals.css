@@ -2,39 +2,124 @@
 @variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --input-bg: #f3f4f6;
-  --input-border: #d1d5db;
-  --input-focus: #dc2626;
+  --background: #fff7ef;
+  --background-elevated: #ffffff;
+  --foreground: #2f221c;
+  --muted-foreground: #7a5f53;
+  --input-bg: #fffdf8;
+  --input-border: #e7d8cd;
+  --input-focus: #ef6c33;
+  --card-border: #efdccf;
+  --brand: #ef6c33;
+  --brand-strong: #d9480f;
+  --accent-1: #f97316;
+  --accent-2: #f59e0b;
+  --accent-3: #fb7185;
+  --shadow-soft: 0 10px 30px rgba(113, 69, 45, 0.08);
 }
 
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --input-bg: #1f2937;
-  --input-border: #374151;
-  --input-focus: #dc2626;
+  --background: #17110f;
+  --background-elevated: #201816;
+  --foreground: #f8eee8;
+  --muted-foreground: #c6aca0;
+  --input-bg: #2a201d;
+  --input-border: #4a3730;
+  --input-focus: #ff915e;
+  --card-border: #4a3730;
+  --brand: #ff915e;
+  --brand-strong: #ff7a45;
+  --accent-1: #ff915e;
+  --accent-2: #fbbf24;
+  --accent-3: #fb7185;
+  --shadow-soft: 0 14px 32px rgba(0, 0, 0, 0.3);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  background-image:
+    radial-gradient(circle at 8% -10%, color-mix(in srgb, var(--accent-1) 30%, transparent), transparent 42%),
+    radial-gradient(circle at 90% -10%, color-mix(in srgb, var(--accent-2) 26%, transparent), transparent 40%),
+    radial-gradient(circle at 90% 85%, color-mix(in srgb, var(--accent-3) 18%, transparent), transparent 36%);
   font-family: Arial, Helvetica, sans-serif;
+  line-height: 1.5;
+  min-height: 100vh;
 }
 
-input, textarea, select {
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background-image:
+    linear-gradient(120deg, color-mix(in srgb, var(--accent-1) 10%, transparent), transparent 40%),
+    linear-gradient(-120deg, color-mix(in srgb, var(--accent-2) 9%, transparent), transparent 45%);
+  opacity: 0.8;
+}
+
+input,
+textarea,
+select {
   background-color: var(--input-bg);
   border: 1px solid var(--input-border);
   color: var(--foreground);
-  border-radius: 6px;
-  padding: 8px 12px;
+  border-radius: 10px;
+  padding: 10px 12px;
   width: 100%;
-  font-size: 14px;
+  font-size: 15px;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
 }
 
-input:focus, textarea:focus, select:focus {
+input::placeholder,
+textarea::placeholder {
+  color: color-mix(in srgb, var(--muted-foreground) 75%, transparent);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
   border-color: var(--input-focus);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--input-focus) 24%, transparent);
+}
+
+button {
+  transition: transform 0.12s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  opacity: 0.7;
+}
+
+a {
+  color: var(--brand);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  letter-spacing: -0.01em;
+}
+
+main {
+  width: 100%;
+}
+
+section,
+article {
+  background: var(--background-elevated);
+  border-color: var(--card-border) !important;
+  box-shadow: var(--shadow-soft);
+}
+
+section:hover,
+article:hover {
+  box-shadow: 0 16px 36px color-mix(in srgb, var(--brand) 16%, transparent);
 }

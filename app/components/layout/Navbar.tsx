@@ -1,59 +1,80 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { useTheme } from 'next-themes'
-import { Sun, Moon, UtensilsCrossed, Menu, X } from 'lucide-react'
+import { Sun, Moon, UtensilsCrossed } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export default function Navbar() {
+  const pathname = usePathname()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
-  const [menuOpen, setMenuOpen] = useState(false)
+  const supabase = createClient()
+
+  useEffect(() => {
+    async function syncUser() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      setUserEmail(user?.email ?? null)
+    }
+
+    void syncUser()
+
+    const { data: authSubscription } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserEmail(session?.user?.email ?? null)
+    })
+
+    return () => {
+      authSubscription.subscription.unsubscribe()
+    }
+  }, [supabase])
 
   useEffect(() => {
     setMounted(true)
-    async function getUser() {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      setUserEmail(user?.email ?? null)
-    }
-    getUser()
   }, [])
 
   async function handleSignOut() {
-    const supabase = createClient()
     await supabase.auth.signOut()
     setUserEmail(null)
     window.location.href = '/login'
   }
 
+  const hideAccountActions =
+    pathname === '/login' ||
+    pathname === '/signup' ||
+    pathname === '/forgot-password' ||
+    pathname === '/reset-password'
+
   return (
     <nav style={{
-      borderBottom: '1px solid #e5e7eb',
       padding: '0 24px',
-      height: '64px',
+      height: '72px',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
       position: 'sticky',
       top: 0,
       zIndex: 50,
-      backgroundColor: 'var(--background)',
+      backdropFilter: 'blur(10px)',
+      backgroundColor: 'color-mix(in srgb, var(--background) 85%, transparent)',
     }}>
 
       {/* Logo */}
-      <a href="/" style={{
+      <Link href="/" style={{
         display: 'flex',
         alignItems: 'center',
         gap: '8px',
         textDecoration: 'none',
         fontWeight: '700',
-        fontSize: '20px',
+        fontSize: '22px',
       }}>
-        <UtensilsCrossed size={24} />
+        <UtensilsCrossed size={22} />
         <span>RecipeForum</span>
-      </a>
+      </Link>
 
       {/* Desktop nav links */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
@@ -62,40 +83,44 @@ export default function Navbar() {
         {mounted && (
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+            style={{
+              background: 'var(--background-elevated)',
+              border: '1px solid var(--card-border)',
+              cursor: 'pointer',
+              padding: '7px 8px',
+              borderRadius: '999px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
           >
             {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
           </button>
         )}
 
-        {userEmail ? (
+        {hideAccountActions ? null : userEmail ? (
           <>
-            <a href="/recipes/new" style={{ textDecoration: 'none', fontWeight: '500' }}>
+            <Link href="/profile" style={{ textDecoration: 'none', fontWeight: '500' }}>
+              Profile
+            </Link>
+            <Link href="/recipes/new" style={{ textDecoration: 'none', fontWeight: '500' }}>
               Share Recipe
-            </a>
+            </Link>
             <button
               onClick={handleSignOut}
-              style={{ background: 'none', border: '1px solid #e5e7eb', padding: '6px 16px', borderRadius: '8px', cursor: 'pointer' }}
+              style={{
+                background: 'var(--background-elevated)',
+                border: '1px solid var(--card-border)',
+                padding: '7px 16px',
+                borderRadius: '10px',
+                cursor: 'pointer',
+              }}
             >
               Sign out
             </button>
           </>
         ) : (
-          <>
-            <a href="/login" style={{ textDecoration: 'none', fontWeight: '500' }}>
-              Sign in
-            </a>
-            <a href="/signup" style={{
-              textDecoration: 'none',
-              fontWeight: '500',
-              backgroundColor: '#dc2626',
-              color: 'white',
-              padding: '6px 16px',
-              borderRadius: '8px',
-            }}>
-              Sign up
-            </a>
-          </>
+          <></>
         )}
       </div>
     </nav>
