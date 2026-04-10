@@ -5,13 +5,13 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 type Difficulty = 'easy' | 'medium' | 'hard'
-type DietType = 'veg' | 'non-veg' | 'vegan' | 'egg' | 'pescatarian'
+type FoodPreference = 'veg' | 'non-veg'
 
 type RecipeFormState = {
   title: string
   description: string
   cuisineType: string
-  dietType: DietType
+  foodPreference: FoodPreference
   difficulty: Difficulty
   prepTimeMins: string
   cookTimeMins: string
@@ -24,7 +24,7 @@ const initialState: RecipeFormState = {
   title: '',
   description: '',
   cuisineType: '',
-  dietType: 'veg',
+  foodPreference: 'veg',
   difficulty: 'easy',
   prepTimeMins: '',
   cookTimeMins: '',
@@ -170,7 +170,7 @@ export default function NewRecipePage() {
       slug: generatedSlug,
       description: form.description.trim() || null,
       cuisine_type: form.cuisineType.trim(),
-      diet_type: form.dietType,
+      diet_type: form.foodPreference,
       difficulty: form.difficulty,
       prep_time_mins: prepMinutes,
       cook_time_mins: cookMinutes,
@@ -245,18 +245,15 @@ export default function NewRecipePage() {
           </div>
 
           <div>
-            <label htmlFor="dietType">Diet type</label>
+            <label htmlFor="foodPreference">Food preference</label>
             <select
-              id="dietType"
+              id="foodPreference"
               required
-              value={form.dietType}
-              onChange={(e) => updateField('dietType', e.target.value as DietType)}
+              value={form.foodPreference}
+              onChange={(e) => updateField('foodPreference', e.target.value as FoodPreference)}
             >
               <option value="veg">veg</option>
               <option value="non-veg">non-veg</option>
-              <option value="vegan">vegan</option>
-              <option value="egg">egg</option>
-              <option value="pescatarian">pescatarian</option>
             </select>
           </div>
 

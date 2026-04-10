@@ -6,13 +6,13 @@ import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 type Difficulty = 'easy' | 'medium' | 'hard'
-type DietType = 'veg' | 'non-veg' | 'vegan' | 'egg' | 'pescatarian'
+type FoodPreference = 'veg' | 'non-veg'
 
 type RecipeFormState = {
   title: string
   description: string
   cuisineType: string
-  dietType: DietType
+  foodPreference: FoodPreference
   difficulty: Difficulty
   prepTime: string
   cookTime: string
@@ -28,7 +28,7 @@ type RecipeRow = {
   title: string
   description: string | null
   cuisine_type: string
-  diet_type: DietType
+  diet_type: string
   difficulty: Difficulty
   prep_time_mins: number
   cook_time_mins: number
@@ -73,7 +73,7 @@ export default function EditRecipePage() {
     title: '',
     description: '',
     cuisineType: '',
-    dietType: 'veg',
+    foodPreference: 'veg',
     difficulty: 'easy',
     prepTime: '',
     cookTime: '',
@@ -123,7 +123,7 @@ export default function EditRecipePage() {
         title: recipe.title ?? '',
         description: recipe.description ?? '',
         cuisineType: recipe.cuisine_type ?? '',
-        dietType: recipe.diet_type ?? 'veg',
+        foodPreference: recipe.diet_type === 'non-veg' ? 'non-veg' : 'veg',
         difficulty: recipe.difficulty ?? 'easy',
         prepTime: formatMinutesToHHMM(recipe.prep_time_mins ?? 0),
         cookTime: formatMinutesToHHMM(recipe.cook_time_mins ?? 0),
@@ -204,7 +204,7 @@ export default function EditRecipePage() {
         title: form.title.trim(),
         description: form.description.trim() || null,
         cuisine_type: form.cuisineType.trim(),
-        diet_type: form.dietType,
+        diet_type: form.foodPreference,
         difficulty: form.difficulty,
         prep_time_mins: prepMinutes,
         cook_time_mins: cookMinutes,
@@ -266,13 +266,10 @@ export default function EditRecipePage() {
             <input id="cuisineType" type="text" value={form.cuisineType} onChange={(e) => updateField('cuisineType', e.target.value)} required />
           </div>
           <div>
-            <label htmlFor="dietType">Diet type</label>
-            <select id="dietType" value={form.dietType} onChange={(e) => updateField('dietType', e.target.value as DietType)} required>
+            <label htmlFor="foodPreference">Food preference</label>
+            <select id="foodPreference" value={form.foodPreference} onChange={(e) => updateField('foodPreference', e.target.value as FoodPreference)} required>
               <option value="veg">veg</option>
               <option value="non-veg">non-veg</option>
-              <option value="vegan">vegan</option>
-              <option value="egg">egg</option>
-              <option value="pescatarian">pescatarian</option>
             </select>
           </div>
           <div>

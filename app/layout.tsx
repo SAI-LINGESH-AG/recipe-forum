@@ -8,7 +8,7 @@ import './globals.css'
 const geist = Geist({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Recipe Forum — Share Recipes From Around The World',
+  title: 'Recipe Forum - Share Recipes From Around The World',
   description: 'A global community for sharing and discovering food recipes.',
 }
 

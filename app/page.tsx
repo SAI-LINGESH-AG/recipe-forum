@@ -55,7 +55,7 @@ export default function Home() {
   const [cuisineFilter, setCuisineFilter] = useState('')
   const [cuisineOptions, setCuisineOptions] = useState<string[]>([])
   const [showCuisineSuggestions, setShowCuisineSuggestions] = useState(false)
-  const [dietFilter, setDietFilter] = useState('')
+  const [foodPreferenceFilter, setFoodPreferenceFilter] = useState('')
   const [maxTotalTimeFilter, setMaxTotalTimeFilter] = useState('')
 
   useEffect(() => {
@@ -120,8 +120,8 @@ export default function Home() {
         query = query.ilike('cuisine_type', cuisineFilter)
       }
 
-      if (dietFilter) {
-        query = query.eq('diet_type', dietFilter)
+      if (foodPreferenceFilter) {
+        query = query.eq('diet_type', foodPreferenceFilter)
       }
 
       if (maxTotalTimeFilter) {
@@ -143,7 +143,7 @@ export default function Home() {
     }
 
     fetchRecipes()
-  }, [currentPage, searchQuery, cuisineFilter, dietFilter, maxTotalTimeFilter])
+  }, [currentPage, searchQuery, cuisineFilter, foodPreferenceFilter, maxTotalTimeFilter])
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
   const filteredCuisineOptions = cuisineOptions.filter((cuisine) =>
@@ -162,7 +162,7 @@ export default function Home() {
     setSearchQuery('')
     setCuisineFilter('')
     setShowCuisineSuggestions(false)
-    setDietFilter('')
+    setFoodPreferenceFilter('')
     setMaxTotalTimeFilter('')
     setCurrentPage(1)
   }
@@ -258,18 +258,15 @@ export default function Home() {
           )}
         </div>
         <select
-          value={dietFilter}
+          value={foodPreferenceFilter}
           onChange={(e) => {
-            setDietFilter(e.target.value)
+            setFoodPreferenceFilter(e.target.value)
             setCurrentPage(1)
           }}
         >
-          <option value="">All types</option>
+          <option value="">All preferences</option>
           <option value="veg">veg</option>
           <option value="non-veg">non-veg</option>
-          <option value="vegan">vegan</option>
-          <option value="egg">egg</option>
-          <option value="pescatarian">pescatarian</option>
         </select>
         <input
           type="number"

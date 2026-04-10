@@ -504,7 +504,7 @@ export default function RecipeDetailPage() {
           <strong>Cuisine:</strong> {recipe.cuisine_type}
         </p>
         <p>
-          <strong>Diet:</strong> {recipe.diet_type}
+          <strong>Preference:</strong> {recipe.diet_type}
         </p>
         <p>
           <strong>Difficulty:</strong> {recipe.difficulty}
