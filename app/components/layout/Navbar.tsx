@@ -49,6 +49,19 @@ export default function Navbar() {
     pathname === '/forgot-password' ||
     pathname === '/reset-password'
 
+  const navChipStyle = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'var(--background-elevated)',
+    border: '1px solid var(--card-border)',
+    padding: '7px 14px',
+    borderRadius: '10px',
+    textDecoration: 'none',
+    fontWeight: 600,
+    lineHeight: 1.2,
+  } as const
+
   return (
     <nav style={{
       padding: '0 24px',
@@ -77,42 +90,38 @@ export default function Navbar() {
       </Link>
 
       {/* Desktop nav links */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
 
         {/* Theme toggle */}
         {mounted && (
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             style={{
-              background: 'var(--background-elevated)',
-              border: '1px solid var(--card-border)',
+              ...navChipStyle,
               cursor: 'pointer',
-              padding: '7px 8px',
+              padding: '7px 10px',
               borderRadius: '999px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
             }}
           >
             {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
           </button>
         )}
+        <a href="mailto:sailingesh664@gmail.com" style={navChipStyle}>
+          Support
+        </a>
 
         {hideAccountActions ? null : userEmail ? (
           <>
-            <Link href="/profile" style={{ textDecoration: 'none', fontWeight: '500' }}>
+            <Link href="/profile" style={navChipStyle}>
               Profile
             </Link>
-            <Link href="/recipes/new" style={{ textDecoration: 'none', fontWeight: '500' }}>
+            <Link href="/recipes/new" style={navChipStyle}>
               Share Recipe
             </Link>
             <button
               onClick={handleSignOut}
               style={{
-                background: 'var(--background-elevated)',
-                border: '1px solid var(--card-border)',
-                padding: '7px 16px',
-                borderRadius: '10px',
+                ...navChipStyle,
                 cursor: 'pointer',
               }}
             >
