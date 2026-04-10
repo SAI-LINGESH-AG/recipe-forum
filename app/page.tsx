@@ -30,6 +30,10 @@ type RecipeRow = {
     | null
 }
 
+type CuisineRow = {
+  cuisine_type: string | null
+}
+
 const PAGE_SIZE = 9
 
 function formatDuration(totalMinutes: number): string {
@@ -49,6 +53,8 @@ export default function Home() {
   const [feedError, setFeedError] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [cuisineFilter, setCuisineFilter] = useState('')
+  const [cuisineOptions, setCuisineOptions] = useState<string[]>([])
+  const [showCuisineSuggestions, setShowCuisineSuggestions] = useState(false)
   const [dietFilter, setDietFilter] = useState('')
   const [maxTotalTimeFilter, setMaxTotalTimeFilter] = useState('')
 
@@ -64,6 +70,30 @@ export default function Home() {
     }
     getUser()
   }, [router])
+
+  useEffect(() => {
+    async function fetchCuisineOptions() {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('recipes')
+        .select('cuisine_type')
+        .eq('is_published', true)
+
+      if (error) return
+
+      const uniqueCuisines = Array.from(
+        new Set(
+          ((data as CuisineRow[]) ?? [])
+            .map((row) => row.cuisine_type?.trim() ?? '')
+            .filter(Boolean)
+        )
+      ).sort((a, b) => a.localeCompare(b))
+
+      setCuisineOptions(uniqueCuisines)
+    }
+
+    fetchCuisineOptions()
+  }, [])
 
   useEffect(() => {
     async function fetchRecipes() {
@@ -116,6 +146,9 @@ export default function Home() {
   }, [currentPage, searchQuery, cuisineFilter, dietFilter, maxTotalTimeFilter])
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
+  const filteredCuisineOptions = cuisineOptions.filter((cuisine) =>
+    cuisine.toLowerCase().includes(cuisineFilter.trim().toLowerCase())
+  )
 
   function getAuthorDisplayName(recipe: RecipeRow): string {
     if (!recipe.author) return 'Unknown'
@@ -125,14 +158,10 @@ export default function Home() {
     return recipe.author.full_name || recipe.author.username || 'Unknown'
   }
 
-  function handleApplyFilters(e: React.FormEvent) {
-    e.preventDefault()
-    setCurrentPage(1)
-  }
-
   function clearFilters() {
     setSearchQuery('')
     setCuisineFilter('')
+    setShowCuisineSuggestions(false)
     setDietFilter('')
     setMaxTotalTimeFilter('')
     setCurrentPage(1)
@@ -148,8 +177,7 @@ export default function Home() {
         </p>
       </div>
 
-      <form
-        onSubmit={handleApplyFilters}
+      <div
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
@@ -165,17 +193,78 @@ export default function Home() {
         <input
           type="text"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => {
+            setSearchQuery(e.target.value)
+            setCurrentPage(1)
+          }}
           placeholder="Search recipes"
         />
-        <input
-          type="text"
-          value={cuisineFilter}
-          onChange={(e) => setCuisineFilter(e.target.value)}
-          placeholder="Cuisine type"
-        />
-        <select value={dietFilter} onChange={(e) => setDietFilter(e.target.value)}>
-          <option value="">All diet types</option>
+        <div style={{ position: 'relative' }}>
+          <input
+            type="text"
+            value={cuisineFilter}
+            onChange={(e) => {
+              setCuisineFilter(e.target.value)
+              setCurrentPage(1)
+              setShowCuisineSuggestions(true)
+            }}
+            onFocus={() => setShowCuisineSuggestions(true)}
+            onBlur={() => {
+              setTimeout(() => setShowCuisineSuggestions(false), 120)
+            }}
+            placeholder="Cuisine type"
+            autoComplete="off"
+          />
+          {showCuisineSuggestions && filteredCuisineOptions.length > 0 && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 6px)',
+                left: 0,
+                right: 0,
+                maxHeight: '180px',
+                overflowY: 'auto',
+                border: '1px solid var(--card-border)',
+                borderRadius: '10px',
+                background: 'var(--background)',
+                boxShadow: 'var(--shadow-soft)',
+                zIndex: 20,
+              }}
+            >
+              {filteredCuisineOptions.map((cuisine) => (
+                <button
+                  key={cuisine}
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    setCuisineFilter(cuisine)
+                    setCurrentPage(1)
+                    setShowCuisineSuggestions(false)
+                  }}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '8px 10px',
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: '1px solid var(--card-border)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {cuisine}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <select
+          value={dietFilter}
+          onChange={(e) => {
+            setDietFilter(e.target.value)
+            setCurrentPage(1)
+          }}
+        >
+          <option value="">All types</option>
           <option value="veg">veg</option>
           <option value="non-veg">non-veg</option>
           <option value="vegan">vegan</option>
@@ -186,22 +275,12 @@ export default function Home() {
           type="number"
           min={1}
           value={maxTotalTimeFilter}
-          onChange={(e) => setMaxTotalTimeFilter(e.target.value)}
+          onChange={(e) => {
+            setMaxTotalTimeFilter(e.target.value)
+            setCurrentPage(1)
+          }}
           placeholder="Max prep time"
         />
-        <button
-          type="submit"
-          style={{
-            borderRadius: '10px',
-            border: '1px solid var(--brand)',
-            background: 'var(--brand)',
-            color: 'white',
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
-        >
-          Apply filters
-        </button>
         <button
           type="button"
           onClick={clearFilters}
@@ -214,7 +293,7 @@ export default function Home() {
         >
           Clear
         </button>
-      </form>
+      </div>
 
       {loadingFeed ? (
         <p>Loading recipes...</p>

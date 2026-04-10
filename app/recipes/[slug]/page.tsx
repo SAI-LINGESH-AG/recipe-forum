@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { Heart, Share2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -81,6 +81,7 @@ function formatDuration(totalMinutes: number): string {
 
 export default function RecipeDetailPage() {
   const params = useParams<{ slug: string }>()
+  const router = useRouter()
   const slug = params?.slug
 
   const [recipe, setRecipe] = useState<RecipeDetail | null>(null)
@@ -96,6 +97,8 @@ export default function RecipeDetailPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [commentError, setCommentError] = useState('')
   const [shareMessage, setShareMessage] = useState('')
+  const [deletingRecipe, setDeletingRecipe] = useState(false)
+  const [deleteRecipeError, setDeleteRecipeError] = useState('')
 
   useEffect(() => {
     async function fetchRecipe() {
@@ -310,6 +313,70 @@ export default function RecipeDetailPage() {
     }
   }
 
+  async function handleDeleteRecipe() {
+    if (!recipe || deletingRecipe) return
+
+    const confirmed = window.confirm(`Delete "${recipe.title}" permanently? This cannot be undone.`)
+    if (!confirmed) return
+
+    const supabase = createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      window.location.href = '/login'
+      return
+    }
+
+    if (user.id !== recipe.author_id) {
+      setDeleteRecipeError('Only the recipe owner can delete this recipe.')
+      return
+    }
+
+    setDeletingRecipe(true)
+    setDeleteRecipeError('')
+
+    const { data: deletedRows, error: deleteError } = await supabase
+      .from('recipes')
+      .delete()
+      .eq('id', recipe.id)
+      .eq('author_id', user.id)
+      .select('id')
+
+    if (deleteError) {
+      setDeleteRecipeError(deleteError.message)
+      setDeletingRecipe(false)
+      return
+    }
+
+    if (!deletedRows || deletedRows.length === 0) {
+      setDeleteRecipeError('Unable to delete recipe due to database permissions. Please update recipe delete policy.')
+      setDeletingRecipe(false)
+      return
+    }
+
+    const { data: existingRow, error: verifyError } = await supabase
+      .from('recipes')
+      .select('id')
+      .eq('id', recipe.id)
+      .maybeSingle()
+
+    if (verifyError) {
+      setDeleteRecipeError(verifyError.message)
+      setDeletingRecipe(false)
+      return
+    }
+
+    if (existingRow) {
+      setDeleteRecipeError('Delete did not persist in database. Please check Supabase RLS/delete policies.')
+      setDeletingRecipe(false)
+      return
+    }
+
+    router.replace('/')
+  }
+
   if (loading) {
     return (
       <main style={{ maxWidth: '900px', margin: '48px auto', padding: '0 20px' }}>
@@ -353,21 +420,40 @@ export default function RecipeDetailPage() {
       <section style={{ border: '1px solid var(--card-border)', borderRadius: '14px', padding: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
           {currentUserId === recipe.author_id && (
-            <Link
-              href={`/recipes/${recipe.slug}/edit`}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                borderRadius: '999px',
-                border: '1px solid var(--card-border)',
-                background: 'transparent',
-                padding: '7px 12px',
-                textDecoration: 'none',
-                fontWeight: 600,
-              }}
-            >
-              Edit recipe
-            </Link>
+            <>
+              <Link
+                href={`/recipes/${recipe.slug}/edit`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  borderRadius: '999px',
+                  border: '1px solid var(--card-border)',
+                  background: 'transparent',
+                  padding: '7px 12px',
+                  textDecoration: 'none',
+                  fontWeight: 600,
+                }}
+              >
+                Edit recipe
+              </Link>
+              <button
+                onClick={handleDeleteRecipe}
+                disabled={deletingRecipe}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  borderRadius: '999px',
+                  border: '1px solid #ef4444',
+                  background: 'transparent',
+                  color: '#ef4444',
+                  padding: '7px 12px',
+                  cursor: deletingRecipe ? 'not-allowed' : 'pointer',
+                  fontWeight: 600,
+                }}
+              >
+                {deletingRecipe ? 'Deleting...' : 'Delete recipe'}
+              </button>
+            </>
           )}
           <button
             onClick={handleLikeToggle}
@@ -410,6 +496,7 @@ export default function RecipeDetailPage() {
             {shareMessage}
           </p>
         )}
+        {deleteRecipeError && <p style={{ marginBottom: '10px', color: 'red' }}>{deleteRecipeError}</p>}
         <p>
           <strong>By:</strong> {getAuthorDisplayName(recipe.author)}
         </p>

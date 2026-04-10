@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
 
 type OnboardingTourProps = {
@@ -10,7 +10,7 @@ type OnboardingTourProps = {
 const TOUR_VERSION = 'v1'
 
 export default function OnboardingTour({ userId }: OnboardingTourProps) {
-  const [isOpen, setIsOpen] = useState(false)
+  const [dismissedUserId, setDismissedUserId] = useState<string | null>(null)
   const [stepIndex, setStepIndex] = useState(0)
 
   const steps = useMemo(
@@ -35,26 +35,19 @@ export default function OnboardingTour({ userId }: OnboardingTourProps) {
     []
   )
 
-  useEffect(() => {
-    if (!userId) {
-      setIsOpen(false)
-      return
-    }
-
+  const hasSeenTour = useMemo(() => {
+    if (!userId || typeof window === 'undefined') return true
     const storageKey = `recipe_forum_tour_seen_${TOUR_VERSION}_${userId}`
-    const hasSeenTour = window.localStorage.getItem(storageKey) === 'true'
-
-    if (!hasSeenTour) {
-      setStepIndex(0)
-      setIsOpen(true)
-    }
+    return window.localStorage.getItem(storageKey) === 'true'
   }, [userId])
+
+  const isOpen = Boolean(userId) && !hasSeenTour && dismissedUserId !== userId
 
   function closeTour() {
     if (!userId) return
     const storageKey = `recipe_forum_tour_seen_${TOUR_VERSION}_${userId}`
     window.localStorage.setItem(storageKey, 'true')
-    setIsOpen(false)
+    setDismissedUserId(userId)
   }
 
   function handleNext() {

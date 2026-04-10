@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTheme } from 'next-themes'
@@ -10,7 +10,11 @@ import { createClient } from '@/lib/supabase/client'
 export default function Navbar() {
   const pathname = usePathname()
   const { theme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  )
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const supabase = createClient()
 
@@ -32,10 +36,6 @@ export default function Navbar() {
       authSubscription.subscription.unsubscribe()
     }
   }, [supabase])
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   async function handleSignOut() {
     await supabase.auth.signOut()
