@@ -41,7 +41,6 @@ function formatDuration(totalMinutes: number): string {
 
 export default function Home() {
   const router = useRouter()
-  const [userEmail, setUserEmail] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
   const [recipes, setRecipes] = useState<RecipeRow[]>([])
   const [currentPage, setCurrentPage] = useState(1)
@@ -61,7 +60,6 @@ export default function Home() {
         router.replace('/login')
         return
       }
-      setUserEmail(user?.email ?? null)
       setUserId(user?.id ?? null)
     }
     getUser()
