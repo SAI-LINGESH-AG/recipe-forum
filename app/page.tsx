@@ -226,7 +226,7 @@ export default function Home() {
                 overflowY: 'auto',
                 border: '1px solid var(--card-border)',
                 borderRadius: '10px',
-                background: 'var(--background)',
+                background: 'var(--background-elevated)',
                 boxShadow: 'var(--shadow-soft)',
                 zIndex: 20,
               }}
@@ -297,7 +297,7 @@ export default function Home() {
       ) : feedError ? (
         <p style={{ color: 'red' }}>{feedError}</p>
       ) : recipes.length === 0 ? (
-        <div style={{ border: '1px solid var(--card-border)', borderRadius: '14px', padding: '20px' }}>
+        <div style={{ border: '1px solid var(--card-border)', borderRadius: '14px', padding: '20px', background: 'var(--background-elevated)' }}>
           <p>No recipes published yet.</p>
           <p style={{ color: 'var(--muted-foreground)', marginTop: '6px' }}>Be the first one to share a recipe.</p>
         </div>
@@ -312,7 +312,7 @@ export default function Home() {
                 padding: '16px',
                 display: 'grid',
                 gap: '9px',
-                background: 'var(--background)',
+                background: 'var(--background-elevated)',
               }}
             >
               <h2 style={{ fontSize: '18px', fontWeight: 700 }}>{recipe.title}</h2>

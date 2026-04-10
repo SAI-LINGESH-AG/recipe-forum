@@ -32,9 +32,9 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main style={{ maxWidth: '460px', margin: '72px auto', padding: '0 20px' }}>
-      <section style={{ border: '1px solid var(--card-border)', borderRadius: '16px', padding: '22px' }}>
-      <h1 style={{ fontSize: '30px', fontWeight: 800, marginBottom: '6px' }}>Reset password</h1>
+    <main style={{ maxWidth: '460px', margin: '56px auto', padding: '0 20px' }}>
+      <section style={{ border: '1px solid var(--card-border)', borderRadius: '16px', padding: '22px', boxShadow: 'var(--shadow-soft)' }}>
+      <h1 style={{ fontSize: '34px', fontWeight: 800, marginBottom: '6px' }}>Reset password</h1>
       <p style={{ color: 'var(--muted-foreground)', marginBottom: '16px' }}>Enter your new password below.</p>
       <form onSubmit={handleResetPassword} style={{ display: 'grid', gap: '12px' }}>
         <div>
@@ -45,7 +45,6 @@ export default function ResetPasswordPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
-            style={{ width: '100%', padding: '10px' }}
           />
         </div>
         <button

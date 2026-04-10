@@ -249,7 +249,18 @@ export default function EditRecipePage() {
         Update your recipe details and save changes.
       </p>
 
-      <form onSubmit={handleSave} style={{ display: 'grid', gap: '14px', border: '1px solid var(--card-border)', borderRadius: '16px', padding: '18px' }}>
+      <form
+        onSubmit={handleSave}
+        style={{
+          display: 'grid',
+          gap: '14px',
+          border: '1px solid var(--card-border)',
+          borderRadius: '16px',
+          padding: '18px',
+          background: 'var(--background-elevated)',
+          boxShadow: 'var(--shadow-soft)',
+        }}
+      >
         <div>
           <label htmlFor="title">Title</label>
           <input id="title" type="text" value={form.title} onChange={(e) => updateField('title', e.target.value)} required />

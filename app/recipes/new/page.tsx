@@ -210,7 +210,18 @@ export default function NewRecipePage() {
         Add the details below to publish your recipe.
       </p>
 
-      <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '14px', border: '1px solid var(--card-border)', borderRadius: '16px', padding: '18px' }}>
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          display: 'grid',
+          gap: '14px',
+          border: '1px solid var(--card-border)',
+          borderRadius: '16px',
+          padding: '18px',
+          background: 'var(--background-elevated)',
+          boxShadow: 'var(--shadow-soft)',
+        }}
+      >
         <div>
           <label htmlFor="title">Title</label>
           <input

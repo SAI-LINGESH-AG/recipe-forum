@@ -42,9 +42,9 @@ export default function LoginPage() {
   }
 
   return (
-    <main style={{ maxWidth: '460px', margin: '72px auto', padding: '0 20px' }}>
-      <section style={{ border: '1px solid var(--card-border)', borderRadius: '16px', padding: '22px' }}>
-      <h1 style={{ fontSize: '30px', fontWeight: 800, marginBottom: '4px' }}>Sign in</h1>
+    <main style={{ maxWidth: '460px', margin: '56px auto', padding: '0 20px' }}>
+      <section style={{ border: '1px solid var(--card-border)', borderRadius: '16px', padding: '22px', boxShadow: 'var(--shadow-soft)' }}>
+      <h1 style={{ fontSize: '34px', fontWeight: 800, marginBottom: '4px' }}>Sign in</h1>
       <p style={{ color: 'var(--muted-foreground)', marginBottom: '18px' }}>Welcome back to your recipe community.</p>
       <form onSubmit={handleLogin} style={{ display: 'grid', gap: '12px' }}>
         <div>
@@ -54,7 +54,6 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            style={{ width: '100%', padding: '10px' }}
           />
         </div>
         <div>
@@ -64,7 +63,6 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            style={{ width: '100%', padding: '10px' }}
           />
         </div>
         {showForgotPassword && (

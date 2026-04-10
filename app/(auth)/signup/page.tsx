@@ -39,9 +39,9 @@ export default function SignupPage() {
   }
 
   return (
-    <main style={{ maxWidth: '460px', margin: '72px auto', padding: '0 20px' }}>
-      <section style={{ border: '1px solid var(--card-border)', borderRadius: '16px', padding: '22px' }}>
-      <h1 style={{ fontSize: '30px', fontWeight: 800, marginBottom: '4px' }}>Create your account</h1>
+    <main style={{ maxWidth: '460px', margin: '56px auto', padding: '0 20px' }}>
+      <section style={{ border: '1px solid var(--card-border)', borderRadius: '16px', padding: '22px', boxShadow: 'var(--shadow-soft)' }}>
+      <h1 style={{ fontSize: '34px', fontWeight: 800, marginBottom: '4px' }}>Create your account</h1>
       <p style={{ color: 'var(--muted-foreground)', marginBottom: '18px' }}>Join and start sharing your best recipes.</p>
       <form onSubmit={handleSignup} style={{ display: 'grid', gap: '12px' }}>
         <div>
@@ -51,7 +51,6 @@ export default function SignupPage() {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
-            style={{ width: '100%', padding: '10px' }}
           />
         </div>
         <div>
@@ -61,7 +60,6 @@ export default function SignupPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            style={{ width: '100%', padding: '10px' }}
           />
         </div>
         <div>
@@ -71,7 +69,6 @@ export default function SignupPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            style={{ width: '100%', padding: '10px' }}
           />
         </div>
         <button

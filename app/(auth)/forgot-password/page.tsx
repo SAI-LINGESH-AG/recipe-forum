@@ -30,9 +30,9 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main style={{ maxWidth: '460px', margin: '72px auto', padding: '0 20px' }}>
-      <section style={{ border: '1px solid var(--card-border)', borderRadius: '16px', padding: '22px' }}>
-      <h1 style={{ fontSize: '30px', fontWeight: 800, marginBottom: '6px' }}>Forgot password</h1>
+    <main style={{ maxWidth: '460px', margin: '56px auto', padding: '0 20px' }}>
+      <section style={{ border: '1px solid var(--card-border)', borderRadius: '16px', padding: '22px', boxShadow: 'var(--shadow-soft)' }}>
+      <h1 style={{ fontSize: '34px', fontWeight: 800, marginBottom: '6px' }}>Forgot password</h1>
       <p style={{ color: 'var(--muted-foreground)', marginBottom: '16px' }}>
         Enter your email and we will send you a reset link.
       </p>
@@ -44,7 +44,6 @@ export default function ForgotPasswordPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            style={{ width: '100%', padding: '10px' }}
           />
         </div>
         <button
