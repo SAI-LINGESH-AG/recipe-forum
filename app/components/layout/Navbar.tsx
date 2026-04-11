@@ -2,13 +2,18 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import { List, Sun, Moon, UtensilsCrossed } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import {
+  RECIPE_FORUM_TOUR_PENDING_KEY,
+  RECIPE_FORUM_TOUR_START_EVENT,
+} from '@/app/components/onboarding/OnboardingTour'
 
 export default function Navbar() {
   const pathname = usePathname()
+  const router = useRouter()
   const { theme, setTheme } = useTheme()
   const mounted = useSyncExternalStore(
     () => () => {},
@@ -62,6 +67,17 @@ export default function Navbar() {
     setUserEmail(null)
     setMenuOpen(false)
     window.location.href = '/login'
+  }
+
+  function handleStartTour() {
+    setMenuOpen(false)
+    if (typeof window === 'undefined') return
+    if (pathname !== '/') {
+      sessionStorage.setItem(RECIPE_FORUM_TOUR_PENDING_KEY, '1')
+      router.push('/')
+    } else {
+      window.dispatchEvent(new Event(RECIPE_FORUM_TOUR_START_EVENT))
+    }
   }
 
   const hideAccountActions =
@@ -173,6 +189,14 @@ export default function Navbar() {
                   >
                     Profile
                   </Link>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={handleStartTour}
+                    style={menuItemStyle}
+                  >
+                    Tour
+                  </button>
                   <a
                     href="mailto:sailingesh664@gmail.com"
                     role="menuitem"

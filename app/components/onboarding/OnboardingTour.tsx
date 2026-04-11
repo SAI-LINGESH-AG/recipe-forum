@@ -1,7 +1,10 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+
+export const RECIPE_FORUM_TOUR_START_EVENT = 'recipe-forum-tour-start'
+export const RECIPE_FORUM_TOUR_PENDING_KEY = 'recipe_forum_tour_pending'
 
 type OnboardingTourProps = {
   userId: string | null
@@ -12,6 +15,7 @@ const TOUR_VERSION = 'v1'
 export default function OnboardingTour({ userId }: OnboardingTourProps) {
   const [dismissedUserId, setDismissedUserId] = useState<string | null>(null)
   const [stepIndex, setStepIndex] = useState(0)
+  const [manualOpen, setManualOpen] = useState(false)
 
   const steps = useMemo(
     () => [
@@ -41,13 +45,38 @@ export default function OnboardingTour({ userId }: OnboardingTourProps) {
     return window.localStorage.getItem(storageKey) === 'true'
   }, [userId])
 
-  const isOpen = Boolean(userId) && !hasSeenTour && dismissedUserId !== userId
+  const isOpen =
+    Boolean(userId) &&
+    (manualOpen || (!hasSeenTour && dismissedUserId !== userId))
+
+  const openTourFromMenu = useCallback(() => {
+    setManualOpen(true)
+    setStepIndex(0)
+    setDismissedUserId(null)
+  }, [])
+
+  useEffect(() => {
+    function onStartTour() {
+      openTourFromMenu()
+    }
+    window.addEventListener(RECIPE_FORUM_TOUR_START_EVENT, onStartTour)
+    return () => window.removeEventListener(RECIPE_FORUM_TOUR_START_EVENT, onStartTour)
+  }, [openTourFromMenu])
+
+  useEffect(() => {
+    if (!userId || typeof window === 'undefined') return
+    if (sessionStorage.getItem(RECIPE_FORUM_TOUR_PENDING_KEY) !== '1') return
+    sessionStorage.removeItem(RECIPE_FORUM_TOUR_PENDING_KEY)
+    const id = window.setTimeout(() => openTourFromMenu(), 0)
+    return () => window.clearTimeout(id)
+  }, [userId, openTourFromMenu])
 
   function closeTour() {
     if (!userId) return
     const storageKey = `recipe_forum_tour_seen_${TOUR_VERSION}_${userId}`
     window.localStorage.setItem(storageKey, 'true')
     setDismissedUserId(userId)
+    setManualOpen(false)
   }
 
   function handleNext() {
