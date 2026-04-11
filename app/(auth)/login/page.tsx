@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
@@ -11,8 +10,6 @@ export default function LoginPage() {
   const [message, setMessage] = useState('')
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
-
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
@@ -35,7 +32,10 @@ export default function LoginPage() {
         loweredMessage.includes('invalid password')
       setShowForgotPassword(invalidCredentials)
     } else {
-      router.push('/')
+      // Full navigation so Supabase auth cookies are sent on the next request.
+      // Client router.push can run before cookies are visible to the proxy, which then redirects to /login.
+      window.location.assign('/')
+      return
     }
 
     setLoading(false)
