@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { Heart } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import OnboardingTour from '@/app/components/onboarding/OnboardingTour'
 
@@ -28,6 +29,7 @@ type RecipeRow = {
         full_name: string | null
       }[]
     | null
+  likes?: { count: number }[] | null
 }
 
 type CuisineRow = {
@@ -43,6 +45,15 @@ function formatDuration(totalMinutes: number): string {
   return mins === 0 ? `${hours} hr` : `${hours} hr ${mins} min`
 }
 
+function getLikesCount(recipe: Pick<RecipeRow, 'likes'>): number {
+  const row = recipe.likes
+  if (!row) return 0
+  const first = Array.isArray(row) ? row[0] : row
+  return typeof first?.count === 'number' ? first.count : 0
+}
+
+type LikesSort = 'all' | 'high' | 'low'
+
 export default function Home() {
   const router = useRouter()
   const [userId, setUserId] = useState<string | null>(null)
@@ -57,6 +68,7 @@ export default function Home() {
   const [showCuisineSuggestions, setShowCuisineSuggestions] = useState(false)
   const [foodPreferenceFilter, setFoodPreferenceFilter] = useState('')
   const [maxTotalTimeFilter, setMaxTotalTimeFilter] = useState('')
+  const [likesSort, setLikesSort] = useState<LikesSort>('all')
 
   useEffect(() => {
     async function getUser() {
@@ -104,46 +116,102 @@ export default function Home() {
       const from = (currentPage - 1) * PAGE_SIZE
       const to = from + PAGE_SIZE - 1
 
-      let query = supabase
-        .from('recipes')
-        .select(
-          'id,title,slug,description,cuisine_type,diet_type,difficulty,prep_time_mins,cook_time_mins,servings,created_at,author:profiles!recipes_author_id_fkey(username,full_name)',
-          { count: 'exact' }
-        )
-        .eq('is_published', true)
+      if (likesSort === 'all') {
+        let query = supabase
+          .from('recipes')
+          .select(
+            'id,title,slug,description,cuisine_type,diet_type,difficulty,prep_time_mins,cook_time_mins,servings,created_at,author:profiles!recipes_author_id_fkey(username,full_name),likes(count)',
+            { count: 'exact' }
+          )
+          .eq('is_published', true)
 
-      if (searchQuery.trim()) {
-        query = query.or(`title.ilike.%${searchQuery.trim()}%,description.ilike.%${searchQuery.trim()}%`)
-      }
+        if (searchQuery.trim()) {
+          query = query.or(`title.ilike.%${searchQuery.trim()}%,description.ilike.%${searchQuery.trim()}%`)
+        }
+        if (cuisineFilter) {
+          query = query.ilike('cuisine_type', cuisineFilter)
+        }
+        if (foodPreferenceFilter) {
+          query = query.eq('diet_type', foodPreferenceFilter)
+        }
+        if (maxTotalTimeFilter) {
+          query = query.lte('prep_time_mins', Number(maxTotalTimeFilter))
+        }
 
-      if (cuisineFilter) {
-        query = query.ilike('cuisine_type', cuisineFilter)
-      }
+        const { data, count, error } = await query.order('created_at', { ascending: false }).range(from, to)
 
-      if (foodPreferenceFilter) {
-        query = query.eq('diet_type', foodPreferenceFilter)
-      }
-
-      if (maxTotalTimeFilter) {
-        query = query.lte('prep_time_mins', Number(maxTotalTimeFilter))
-      }
-
-      const { data, count, error } = await query
-        .order('created_at', { ascending: false })
-        .range(from, to)
-
-      if (error) {
-        setFeedError(error.message)
+        if (error) {
+          setFeedError(error.message)
+        } else {
+          setRecipes((data as RecipeRow[]) ?? [])
+          setTotalCount(count ?? 0)
+        }
       } else {
-        setRecipes((data as RecipeRow[]) ?? [])
-        setTotalCount(count ?? 0)
+        let idQuery = supabase.from('recipes').select('id,likes(count),created_at').eq('is_published', true)
+
+        if (searchQuery.trim()) {
+          idQuery = idQuery.or(`title.ilike.%${searchQuery.trim()}%,description.ilike.%${searchQuery.trim()}%`)
+        }
+        if (cuisineFilter) {
+          idQuery = idQuery.ilike('cuisine_type', cuisineFilter)
+        }
+        if (foodPreferenceFilter) {
+          idQuery = idQuery.eq('diet_type', foodPreferenceFilter)
+        }
+        if (maxTotalTimeFilter) {
+          idQuery = idQuery.lte('prep_time_mins', Number(maxTotalTimeFilter))
+        }
+
+        const { data: idRows, error: idError } = await idQuery.order('created_at', { ascending: false })
+
+        if (idError) {
+          setFeedError(idError.message)
+          setLoadingFeed(false)
+          return
+        }
+
+        type IdRow = { id: string; created_at: string; likes: RecipeRow['likes'] }
+        const rows = (idRows as IdRow[]) ?? []
+        const sorted = [...rows].sort((a, b) => {
+          const diff = getLikesCount(a) - getLikesCount(b)
+          if (diff !== 0) {
+            return likesSort === 'high' ? -diff : diff
+          }
+          return b.created_at.localeCompare(a.created_at)
+        })
+
+        const total = sorted.length
+        const pageIds = sorted.slice(from, to + 1).map((r) => r.id)
+
+        if (pageIds.length === 0) {
+          setRecipes([])
+          setTotalCount(total)
+          setLoadingFeed(false)
+          return
+        }
+
+        const { data: fullRows, error: fullError } = await supabase
+          .from('recipes')
+          .select(
+            'id,title,slug,description,cuisine_type,diet_type,difficulty,prep_time_mins,cook_time_mins,servings,created_at,author:profiles!recipes_author_id_fkey(username,full_name),likes(count)'
+          )
+          .in('id', pageIds)
+
+        if (fullError) {
+          setFeedError(fullError.message)
+        } else {
+          const map = new Map((fullRows as RecipeRow[]).map((r) => [r.id, r]))
+          const ordered = pageIds.map((id) => map.get(id)).filter((r): r is RecipeRow => Boolean(r))
+          setRecipes(ordered)
+          setTotalCount(total)
+        }
       }
 
       setLoadingFeed(false)
     }
 
     fetchRecipes()
-  }, [currentPage, searchQuery, cuisineFilter, foodPreferenceFilter, maxTotalTimeFilter])
+  }, [currentPage, searchQuery, cuisineFilter, foodPreferenceFilter, maxTotalTimeFilter, likesSort])
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
   const filteredCuisineOptions = cuisineOptions.filter((cuisine) =>
@@ -164,6 +232,7 @@ export default function Home() {
     setShowCuisineSuggestions(false)
     setFoodPreferenceFilter('')
     setMaxTotalTimeFilter('')
+    setLikesSort('all')
     setCurrentPage(1)
   }
 
@@ -264,9 +333,21 @@ export default function Home() {
             setCurrentPage(1)
           }}
         >
-          <option value="">All preferences</option>
+          <option value="">Food Preference</option>
           <option value="veg">veg</option>
           <option value="non-veg">non-veg</option>
+        </select>
+        <select
+          value={likesSort}
+          onChange={(e) => {
+            setLikesSort(e.target.value as LikesSort)
+            setCurrentPage(1)
+          }}
+          aria-label="Sort by likes"
+        >
+          <option value="all">Sort by Likes</option>
+          <option value="high">Highest likes</option>
+          <option value="low">Lowest likes</option>
         </select>
         <input
           type="number"
@@ -327,6 +408,19 @@ export default function Home() {
               </p>
               <p style={{ fontSize: '13px', color: 'var(--muted-foreground)' }}>
                 By {getAuthorDisplayName(recipe)}
+              </p>
+              <p
+                style={{
+                  fontSize: '13px',
+                  color: 'var(--muted-foreground)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  margin: 0,
+                }}
+              >
+                <Heart size={14} aria-hidden />
+                <span>{getLikesCount(recipe)} likes</span>
               </p>
               <Link
                 href={`/recipes/${recipe.slug}`}

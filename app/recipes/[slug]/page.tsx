@@ -480,7 +480,7 @@ export default function RecipeDetailPage() {
             }}
           >
             <Heart size={16} fill={hasLiked ? 'var(--brand-strong)' : 'none'} />
-            {hasLiked ? 'Liked' : 'Like'} ({likesCount})
+            {hasLiked ? 'Liked' : 'Like'}
           </button>
 
           <button
