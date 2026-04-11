@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { Heart, Share2 } from 'lucide-react'
@@ -53,9 +53,46 @@ type CommentRow = {
   id: string
   recipe_id: string
   author_id: string
+  parent_id: string | null
   content: string
   created_at: string | null
   author: CommentAuthor
+}
+
+type CommentWithReplies = CommentRow & { replies: CommentWithReplies[] }
+
+function buildCommentTree(flat: CommentRow[]): CommentWithReplies[] {
+  const byParent = new Map<string | null, CommentRow[]>()
+  for (const c of flat) {
+    const key = c.parent_id ?? null
+    const list = byParent.get(key) ?? []
+    list.push(c)
+    byParent.set(key, list)
+  }
+  for (const list of byParent.values()) {
+    list.sort((a, b) => String(a.created_at ?? '').localeCompare(String(b.created_at ?? '')))
+  }
+  function attach(c: CommentRow): CommentWithReplies {
+    const kids = (byParent.get(c.id) ?? []).map(attach)
+    return { ...c, replies: kids }
+  }
+  const roots = byParent.get(null) ?? []
+  return roots.map(attach)
+}
+
+function removeCommentBranch(comments: CommentRow[], removedId: string): CommentRow[] {
+  const toRemove = new Set<string>([removedId])
+  let growing = true
+  while (growing) {
+    growing = false
+    for (const c of comments) {
+      if (c.parent_id && toRemove.has(c.parent_id) && !toRemove.has(c.id)) {
+        toRemove.add(c.id)
+        growing = true
+      }
+    }
+  }
+  return comments.filter((c) => !toRemove.has(c.id))
 }
 
 function getAuthorDisplayName(author: Author): string {
@@ -95,6 +132,9 @@ export default function RecipeDetailPage() {
   const [comments, setComments] = useState<CommentRow[]>([])
   const [commentInput, setCommentInput] = useState('')
   const [submittingComment, setSubmittingComment] = useState(false)
+  const [replyingToParentId, setReplyingToParentId] = useState<string | null>(null)
+  const [replyText, setReplyText] = useState('')
+  const [submittingReply, setSubmittingReply] = useState(false)
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [commentError, setCommentError] = useState('')
@@ -153,7 +193,9 @@ export default function RecipeDetailPage() {
 
       const { data: commentsData, error: commentsFetchError } = await supabase
         .from('comments')
-        .select('id,recipe_id,author_id,content,created_at,author:profiles!comments_author_id_fkey(username,full_name)')
+        .select(
+          'id,recipe_id,author_id,parent_id,content,created_at,author:profiles!comments_author_id_fkey(username,full_name)'
+        )
         .eq('recipe_id', recipeData.id)
         .order('created_at', { ascending: true })
 
@@ -247,7 +289,9 @@ export default function RecipeDetailPage() {
         content,
         parent_id: null,
       })
-      .select('id,recipe_id,author_id,content,created_at,author:profiles!comments_author_id_fkey(username,full_name)')
+      .select(
+        'id,recipe_id,author_id,parent_id,content,created_at,author:profiles!comments_author_id_fkey(username,full_name)'
+      )
       .single()
 
     if (insertError) {
@@ -259,6 +303,51 @@ export default function RecipeDetailPage() {
     setComments((prev) => [...prev, data as CommentRow])
     setCommentInput('')
     setSubmittingComment(false)
+  }
+
+  async function handleReplySubmit(e: React.FormEvent, parentId: string) {
+    e.preventDefault()
+    if (!recipe || submittingReply) return
+
+    const content = replyText.trim()
+    if (!content) return
+
+    const supabase = createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      router.push('/login')
+      return
+    }
+
+    setSubmittingReply(true)
+    setCommentError('')
+
+    const { data, error: insertError } = await supabase
+      .from('comments')
+      .insert({
+        recipe_id: recipe.id,
+        author_id: user.id,
+        content,
+        parent_id: parentId,
+      })
+      .select(
+        'id,recipe_id,author_id,parent_id,content,created_at,author:profiles!comments_author_id_fkey(username,full_name)'
+      )
+      .single()
+
+    if (insertError) {
+      setCommentError(insertError.message)
+      setSubmittingReply(false)
+      return
+    }
+
+    setComments((prev) => [...prev, data as CommentRow])
+    setReplyText('')
+    setReplyingToParentId(null)
+    setSubmittingReply(false)
   }
 
   async function handleDeleteComment(commentId: string) {
@@ -287,7 +376,7 @@ export default function RecipeDetailPage() {
       return
     }
 
-    setComments((prev) => prev.filter((comment) => comment.id !== commentId))
+    setComments((prev) => removeCommentBranch(prev, commentId))
     setDeletingCommentId(null)
   }
 
@@ -377,6 +466,127 @@ export default function RecipeDetailPage() {
     }
 
     router.replace('/')
+  }
+
+  const commentTree = useMemo(() => buildCommentTree(comments), [comments])
+
+  function renderCommentThread(nodes: CommentWithReplies[], depth: number): ReactNode {
+    if (!recipe) return null
+    const canDeleteAny = currentUserId === recipe.author_id
+
+    return nodes.map((node) => {
+      const isReplying = replyingToParentId === node.id
+      const indent = depth === 0 ? 0 : Math.min(8 + depth * 14, 56)
+
+      return (
+        <div key={node.id} style={{ display: 'grid', gap: '10px' }}>
+          <article
+            style={{
+              border: '1px solid var(--card-border)',
+              borderRadius: '10px',
+              padding: '10px',
+              display: 'grid',
+              gap: '8px',
+              marginLeft: indent,
+              background: depth > 0 ? 'color-mix(in srgb, var(--foreground) 3%, transparent)' : undefined,
+            }}
+          >
+            <p style={{ fontSize: '13px', color: 'var(--muted-foreground)', margin: 0 }}>
+              {getCommentAuthorDisplayName(node.author)}
+              {depth > 0 ? (
+                <span style={{ fontWeight: 400 }}> · reply</span>
+              ) : null}
+            </p>
+            <p style={{ margin: 0 }}>{node.content}</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+              {currentUserId ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (replyingToParentId === node.id) {
+                      setReplyingToParentId(null)
+                      setReplyText('')
+                    } else {
+                      setReplyingToParentId(node.id)
+                      setReplyText('')
+                    }
+                  }}
+                  style={{
+                    padding: '6px 10px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--card-border)',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                  }}
+                >
+                  {isReplying ? 'Cancel' : 'Reply'}
+                </button>
+              ) : null}
+              {canDeleteAny ? (
+                <button
+                  type="button"
+                  onClick={() => handleDeleteComment(node.id)}
+                  disabled={deletingCommentId === node.id}
+                  style={{
+                    padding: '6px 10px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--card-border)',
+                    color: 'var(--brand-strong)',
+                    cursor: deletingCommentId === node.id ? 'not-allowed' : 'pointer',
+                    background: 'transparent',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                  }}
+                >
+                  {deletingCommentId === node.id ? 'Removing...' : 'Remove'}
+                </button>
+              ) : null}
+            </div>
+            {isReplying ? (
+              <form
+                onSubmit={(e) => handleReplySubmit(e, node.id)}
+                style={{ display: 'grid', gap: '8px', marginTop: '4px' }}
+              >
+                <textarea
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  rows={3}
+                  placeholder="Write your reply"
+                />
+                <button
+                  type="submit"
+                  disabled={submittingReply || !replyText.trim()}
+                  style={{
+                    width: 'fit-content',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--card-border)',
+                    cursor: submittingReply || !replyText.trim() ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {submittingReply ? 'Posting...' : 'Post reply'}
+                </button>
+              </form>
+            ) : null}
+          </article>
+          {node.replies.length > 0 ? (
+            <div
+              style={{
+                marginLeft: Math.min(12 + depth * 4, 24),
+                paddingLeft: '12px',
+                borderLeft: '2px solid var(--card-border)',
+                display: 'grid',
+                gap: '10px',
+              }}
+            >
+              {renderCommentThread(node.replies, depth + 1)}
+            </div>
+          ) : null}
+        </div>
+      )
+    })
   }
 
   if (loading) {
@@ -574,45 +784,7 @@ export default function RecipeDetailPage() {
         {comments.length === 0 ? (
           <p style={{ color: 'var(--muted-foreground)' }}>No comments yet.</p>
         ) : (
-          <div style={{ display: 'grid', gap: '10px' }}>
-            {comments.map((comment) => {
-              const canDelete = currentUserId === recipe.author_id
-              return (
-                <article
-                  key={comment.id}
-                  style={{
-                    border: '1px solid var(--card-border)',
-                    borderRadius: '10px',
-                    padding: '10px',
-                    display: 'grid',
-                    gap: '6px',
-                  }}
-                >
-                  <p style={{ fontSize: '13px', color: 'var(--muted-foreground)' }}>
-                    {getCommentAuthorDisplayName(comment.author)}
-                  </p>
-                  <p style={{ margin: 0 }}>{comment.content}</p>
-                  {canDelete && (
-                    <button
-                      onClick={() => handleDeleteComment(comment.id)}
-                      disabled={deletingCommentId === comment.id}
-                      style={{
-                        width: 'fit-content',
-                        padding: '6px 10px',
-                        borderRadius: '8px',
-                        border: '1px solid var(--card-border)',
-                        color: 'var(--brand-strong)',
-                        cursor: deletingCommentId === comment.id ? 'not-allowed' : 'pointer',
-                        background: 'transparent',
-                      }}
-                    >
-                      {deletingCommentId === comment.id ? 'Removing...' : 'Remove comment'}
-                    </button>
-                  )}
-                </article>
-              )
-            })}
-          </div>
+          <div style={{ display: 'grid', gap: '10px' }}>{renderCommentThread(commentTree, 0)}</div>
         )}
       </section>
     </main>
