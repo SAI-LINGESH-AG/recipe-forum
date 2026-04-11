@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { normalizeOptionalVideoUrl } from '@/lib/video-embed'
 
 type Difficulty = 'easy' | 'medium' | 'hard'
 type FoodPreference = 'veg' | 'non-veg'
@@ -19,6 +20,7 @@ type RecipeFormState = {
   servings: string
   ingredients: string[]
   steps: string[]
+  videoUrl: string
 }
 
 type RecipeRow = {
@@ -35,6 +37,7 @@ type RecipeRow = {
   servings: number
   ingredients: string[]
   steps: string[]
+  video_url: string | null
 }
 
 function formatMinutesToHHMM(totalMinutes: number): string {
@@ -80,6 +83,7 @@ export default function EditRecipePage() {
     servings: '',
     ingredients: [''],
     steps: [''],
+    videoUrl: '',
   })
 
   const ingredientRows = Array.isArray(form.ingredients) ? form.ingredients : ['']
@@ -101,7 +105,7 @@ export default function EditRecipePage() {
 
       const { data, error } = await supabase
         .from('recipes')
-        .select('id,author_id,slug,title,description,cuisine_type,diet_type,difficulty,prep_time_mins,cook_time_mins,servings,ingredients,steps')
+        .select('id,author_id,slug,title,description,cuisine_type,diet_type,difficulty,prep_time_mins,cook_time_mins,servings,ingredients,steps,video_url')
         .eq('slug', slug)
         .single()
 
@@ -130,6 +134,7 @@ export default function EditRecipePage() {
         servings: String(recipe.servings ?? ''),
         ingredients: Array.isArray(recipe.ingredients) && recipe.ingredients.length > 0 ? recipe.ingredients : [''],
         steps: Array.isArray(recipe.steps) && recipe.steps.length > 0 ? recipe.steps : [''],
+        videoUrl: recipe.video_url ?? '',
       })
 
       setIsChecking(false)
@@ -197,6 +202,13 @@ export default function EditRecipePage() {
       return
     }
 
+    const videoUrl = normalizeOptionalVideoUrl(form.videoUrl)
+    if (form.videoUrl.trim() && !videoUrl) {
+      setMessage('Please enter a valid http(s) video URL, or clear the field.')
+      setIsSubmitting(false)
+      return
+    }
+
     const supabase = createClient()
     const { error } = await supabase
       .from('recipes')
@@ -211,6 +223,7 @@ export default function EditRecipePage() {
         servings: servingsNumber,
         ingredients,
         steps,
+        video_url: videoUrl,
       })
       .eq('id', recipeId)
 
@@ -269,6 +282,21 @@ export default function EditRecipePage() {
         <div>
           <label htmlFor="description">Description</label>
           <textarea id="description" value={form.description} onChange={(e) => updateField('description', e.target.value)} rows={3} />
+        </div>
+
+        <div>
+          <label htmlFor="videoUrl">Video URL (optional)</label>
+          <input
+            id="videoUrl"
+            type="url"
+            inputMode="url"
+            placeholder="https://…"
+            value={form.videoUrl}
+            onChange={(e) => updateField('videoUrl', e.target.value)}
+          />
+          <p style={{ fontSize: '13px', color: 'var(--muted-foreground)', marginTop: '6px', marginBottom: 0 }}>
+            Clear the field to remove the video from this recipe.
+          </p>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '12px' }}>

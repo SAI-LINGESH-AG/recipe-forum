@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { Heart, Share2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import RecipeVideo from '@/app/components/recipe/RecipeVideo'
 
 type Author =
   | {
@@ -31,6 +32,7 @@ type RecipeDetail = {
   servings: number
   ingredients: string[]
   steps: string[]
+  video_url: string | null
   view_count: number | null
   created_at: string
   author: Author
@@ -112,7 +114,7 @@ export default function RecipeDetailPage() {
       const { data, error: fetchError } = await supabase
         .from('recipes')
         .select(
-          'id,author_id,title,slug,description,cuisine_type,diet_type,difficulty,prep_time_mins,cook_time_mins,servings,ingredients,steps,view_count,created_at,author:profiles!recipes_author_id_fkey(username,full_name)'
+          'id,author_id,title,slug,description,cuisine_type,diet_type,difficulty,prep_time_mins,cook_time_mins,servings,ingredients,steps,video_url,view_count,created_at,author:profiles!recipes_author_id_fkey(username,full_name)'
         )
         .eq('slug', slug)
         .eq('is_published', true)
@@ -416,6 +418,13 @@ export default function RecipeDetailPage() {
         <h1 style={{ fontSize: '32px', fontWeight: 700, marginBottom: '8px' }}>{recipe.title}</h1>
         {recipe.description && <p style={{ color: 'var(--muted-foreground)' }}>{recipe.description}</p>}
       </div>
+
+      {recipe.video_url ? (
+        <section style={{ border: '1px solid var(--card-border)', borderRadius: '14px', padding: '16px' }}>
+          <h2 style={{ fontSize: '22px', fontWeight: 700, marginBottom: '12px' }}>Video</h2>
+          <RecipeVideo url={recipe.video_url} />
+        </section>
+      ) : null}
 
       <section style={{ border: '1px solid var(--card-border)', borderRadius: '14px', padding: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>

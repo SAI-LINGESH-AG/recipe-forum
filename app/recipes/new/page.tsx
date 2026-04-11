@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { normalizeOptionalVideoUrl } from '@/lib/video-embed'
 
 type Difficulty = 'easy' | 'medium' | 'hard'
 type FoodPreference = 'veg' | 'non-veg'
@@ -18,6 +19,7 @@ type RecipeFormState = {
   servings: string
   ingredients: string[]
   steps: string[]
+  videoUrl: string
 }
 
 const initialState: RecipeFormState = {
@@ -31,6 +33,7 @@ const initialState: RecipeFormState = {
   servings: '',
   ingredients: [''],
   steps: [''],
+  videoUrl: '',
 }
 
 function slugify(input: string): string {
@@ -164,6 +167,13 @@ export default function NewRecipePage() {
       return
     }
 
+    const videoUrl = normalizeOptionalVideoUrl(form.videoUrl)
+    if (form.videoUrl.trim() && !videoUrl) {
+      setMessage('Please enter a valid http(s) video URL, or leave the field empty.')
+      setIsSubmitting(false)
+      return
+    }
+
     const { error } = await supabase.from('recipes').insert({
       author_id: user.id,
       title: form.title.trim(),
@@ -177,6 +187,7 @@ export default function NewRecipePage() {
       servings: Number(form.servings),
       ingredients,
       steps,
+      video_url: videoUrl,
       is_published: true,
     })
 
@@ -240,6 +251,17 @@ export default function NewRecipePage() {
             value={form.description}
             onChange={(e) => updateField('description', e.target.value)}
             rows={3}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="videoUrl">Video URL (optional)</label>
+          <input
+            id="videoUrl"
+            type="url"
+            inputMode="url"
+            value={form.videoUrl}
+            onChange={(e) => updateField('videoUrl', e.target.value)}
           />
         </div>
 
