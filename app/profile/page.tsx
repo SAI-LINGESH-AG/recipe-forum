@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -22,6 +22,26 @@ type UserRecipe = {
   is_published: boolean | null
 }
 
+type ProfileFormState = {
+  username: string
+  fullName: string
+  bio: string
+}
+
+function trimFormState(f: ProfileFormState): ProfileFormState {
+  return {
+    username: f.username.trim(),
+    fullName: f.fullName.trim(),
+    bio: f.bio.trim(),
+  }
+}
+
+function formStatesEqual(a: ProfileFormState, b: ProfileFormState): boolean {
+  const ta = trimFormState(a)
+  const tb = trimFormState(b)
+  return ta.username === tb.username && ta.fullName === tb.fullName && ta.bio === tb.bio
+}
+
 export default function ProfilePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -30,11 +50,18 @@ export default function ProfilePage() {
   const [message, setMessage] = useState('')
   const [userId, setUserId] = useState<string | null>(null)
   const [recipes, setRecipes] = useState<UserRecipe[]>([])
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<ProfileFormState>({
     username: '',
     fullName: '',
     bio: '',
   })
+  const [baselineForm, setBaselineForm] = useState<ProfileFormState>({
+    username: '',
+    fullName: '',
+    bio: '',
+  })
+
+  const hasUnsavedChanges = useMemo(() => !formStatesEqual(form, baselineForm), [form, baselineForm])
 
   useEffect(() => {
     async function fetchProfileAndRecipes() {
@@ -76,20 +103,23 @@ export default function ProfilePage() {
         setRecipes((recipeData as UserRecipe[]) ?? [])
       }
 
-      if (profileData) {
-        const profile = profileData as Profile
-        setForm({
-          username: profile.username ?? '',
-          fullName: profile.full_name ?? '',
-          bio: profile.bio ?? '',
-        })
-      } else {
-        setForm({
-          username: user.email?.split('@')[0] ?? '',
-          fullName: '',
-          bio: '',
-        })
-      }
+      const nextForm: ProfileFormState = profileData
+        ? (() => {
+            const profile = profileData as Profile
+            return {
+              username: (profile.username ?? '').trim(),
+              fullName: (profile.full_name ?? '').trim(),
+              bio: (profile.bio ?? '').trim(),
+            }
+          })()
+        : {
+            username: (user.email?.split('@')[0] ?? '').trim(),
+            fullName: '',
+            bio: '',
+          }
+
+      setForm(nextForm)
+      setBaselineForm(nextForm)
 
       setLoading(false)
     }
@@ -127,6 +157,13 @@ export default function ProfilePage() {
       return
     }
 
+    const savedForm: ProfileFormState = {
+      username: payload.username,
+      fullName: payload.full_name ?? '',
+      bio: payload.bio ?? '',
+    }
+    setForm(savedForm)
+    setBaselineForm(savedForm)
     setMessage('Profile saved successfully.')
     setSaving(false)
   }
@@ -174,7 +211,7 @@ export default function ProfilePage() {
           </div>
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || !hasUnsavedChanges}
             style={{
               width: 'fit-content',
               borderRadius: '10px',
@@ -183,7 +220,8 @@ export default function ProfilePage() {
               background: 'var(--brand)',
               color: 'white',
               fontWeight: 700,
-              cursor: saving ? 'not-allowed' : 'pointer',
+              cursor: saving || !hasUnsavedChanges ? 'not-allowed' : 'pointer',
+              opacity: saving || !hasUnsavedChanges ? 0.55 : 1,
             }}
           >
             {saving ? 'Saving...' : 'Save profile'}
