@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Heart } from 'lucide-react'
+import { Heart, Menu } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import OnboardingTour from '@/app/components/onboarding/OnboardingTour'
 
@@ -52,7 +52,7 @@ function getLikesCount(recipe: Pick<RecipeRow, 'likes'>): number {
   return typeof first?.count === 'number' ? first.count : 0
 }
 
-type LikesSort = 'all' | 'high' | 'low'
+type LikesSort = '' | 'high' | 'low'
 
 export default function Home() {
   const router = useRouter()
@@ -67,8 +67,14 @@ export default function Home() {
   const [cuisineOptions, setCuisineOptions] = useState<string[]>([])
   const [showCuisineSuggestions, setShowCuisineSuggestions] = useState(false)
   const [foodPreferenceFilter, setFoodPreferenceFilter] = useState('')
-  const [maxTotalTimeFilter, setMaxTotalTimeFilter] = useState('')
-  const [likesSort, setLikesSort] = useState<LikesSort>('all')
+  const [likesSort, setLikesSort] = useState<LikesSort>('')
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const filterShellRef = useRef<HTMLDivElement>(null)
+
+  const activeFilterCount =
+    (cuisineFilter.trim() ? 1 : 0) +
+    (foodPreferenceFilter ? 1 : 0) +
+    (likesSort ? 1 : 0)
 
   useEffect(() => {
     async function getUser() {
@@ -108,6 +114,25 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
+    if (!filtersOpen) return
+    function handlePointerDown(e: MouseEvent) {
+      const el = filterShellRef.current
+      if (el && !el.contains(e.target as Node)) {
+        setFiltersOpen(false)
+      }
+    }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setFiltersOpen(false)
+    }
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [filtersOpen])
+
+  useEffect(() => {
     async function fetchRecipes() {
       setLoadingFeed(true)
       setFeedError('')
@@ -116,7 +141,7 @@ export default function Home() {
       const from = (currentPage - 1) * PAGE_SIZE
       const to = from + PAGE_SIZE - 1
 
-      if (likesSort === 'all') {
+      if (!likesSort) {
         let query = supabase
           .from('recipes')
           .select(
@@ -133,9 +158,6 @@ export default function Home() {
         }
         if (foodPreferenceFilter) {
           query = query.eq('diet_type', foodPreferenceFilter)
-        }
-        if (maxTotalTimeFilter) {
-          query = query.lte('prep_time_mins', Number(maxTotalTimeFilter))
         }
 
         const { data, count, error } = await query.order('created_at', { ascending: false }).range(from, to)
@@ -157,9 +179,6 @@ export default function Home() {
         }
         if (foodPreferenceFilter) {
           idQuery = idQuery.eq('diet_type', foodPreferenceFilter)
-        }
-        if (maxTotalTimeFilter) {
-          idQuery = idQuery.lte('prep_time_mins', Number(maxTotalTimeFilter))
         }
 
         const { data: idRows, error: idError } = await idQuery.order('created_at', { ascending: false })
@@ -211,7 +230,7 @@ export default function Home() {
     }
 
     fetchRecipes()
-  }, [currentPage, searchQuery, cuisineFilter, foodPreferenceFilter, maxTotalTimeFilter, likesSort])
+  }, [currentPage, searchQuery, cuisineFilter, foodPreferenceFilter, likesSort])
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
   const filteredCuisineOptions = cuisineOptions.filter((cuisine) =>
@@ -231,9 +250,9 @@ export default function Home() {
     setCuisineFilter('')
     setShowCuisineSuggestions(false)
     setFoodPreferenceFilter('')
-    setMaxTotalTimeFilter('')
-    setLikesSort('all')
+    setLikesSort('')
     setCurrentPage(1)
+    setFiltersOpen(false)
   }
 
   return (
@@ -247,10 +266,8 @@ export default function Home() {
       </div>
 
       <div
+        ref={filterShellRef}
         style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: '10px',
           marginBottom: '18px',
           border: '1px solid var(--card-border)',
           borderRadius: '14px',
@@ -259,118 +276,196 @@ export default function Home() {
           boxShadow: 'var(--shadow-soft)',
         }}
       >
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value)
-            setCurrentPage(1)
-          }}
-          placeholder="Search recipes"
-        />
-        <div style={{ position: 'relative' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <input
             type="text"
-            value={cuisineFilter}
+            value={searchQuery}
             onChange={(e) => {
-              setCuisineFilter(e.target.value)
+              setSearchQuery(e.target.value)
               setCurrentPage(1)
-              setShowCuisineSuggestions(true)
             }}
-            onFocus={() => setShowCuisineSuggestions(true)}
-            onBlur={() => {
-              setTimeout(() => setShowCuisineSuggestions(false), 120)
-            }}
-            placeholder="Cuisine type"
-            autoComplete="off"
+            placeholder="Search recipes"
+            style={{ flex: 1, minWidth: 0 }}
+            aria-label="Search recipes"
           />
-          {showCuisineSuggestions && filteredCuisineOptions.length > 0 && (
-            <div
-              style={{
-                position: 'absolute',
-                top: 'calc(100% + 6px)',
-                left: 0,
-                right: 0,
-                maxHeight: '180px',
-                overflowY: 'auto',
-                border: '1px solid var(--card-border)',
-                borderRadius: '10px',
-                background: 'var(--background-elevated)',
-                boxShadow: 'var(--shadow-soft)',
-                zIndex: 20,
-              }}
-            >
-              {filteredCuisineOptions.map((cuisine) => (
-                <button
-                  key={cuisine}
-                  type="button"
-                  onMouseDown={(e) => {
-                    e.preventDefault()
-                    setCuisineFilter(cuisine)
-                    setCurrentPage(1)
-                    setShowCuisineSuggestions(false)
-                  }}
+          <button
+            type="button"
+            onClick={() => setFiltersOpen((open) => !open)}
+            aria-expanded={filtersOpen}
+            aria-label={filtersOpen ? 'Close filters' : 'Open filters'}
+            style={{
+              position: 'relative',
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '44px',
+              height: '44px',
+              borderRadius: '10px',
+              border: '1px solid var(--card-border)',
+              background: 'var(--background)',
+              cursor: 'pointer',
+              color: 'var(--foreground)',
+            }}
+          >
+            <Menu size={22} strokeWidth={2} aria-hidden />
+            {activeFilterCount > 0 && (
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '6px',
+                  right: '6px',
+                  minWidth: '8px',
+                  height: '8px',
+                  padding: activeFilterCount > 1 ? '0 4px' : 0,
+                  borderRadius: '999px',
+                  background: 'var(--brand)',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  color: 'white',
+                  lineHeight: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                aria-hidden
+              >
+                {activeFilterCount > 1 ? activeFilterCount : ''}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {filtersOpen && (
+          <div
+            style={{
+              marginTop: '14px',
+              paddingTop: '14px',
+              borderTop: '1px solid var(--card-border)',
+              display: 'grid',
+              gap: '12px',
+            }}
+          >
+            <div style={{ position: 'relative' }}>
+              <label htmlFor="filter-cuisine" style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600 }}>
+                Cuisine type
+              </label>
+              <input
+                id="filter-cuisine"
+                type="text"
+                value={cuisineFilter}
+                onChange={(e) => {
+                  setCuisineFilter(e.target.value)
+                  setCurrentPage(1)
+                  setShowCuisineSuggestions(true)
+                }}
+                onFocus={() => setShowCuisineSuggestions(true)}
+                onBlur={() => {
+                  setTimeout(() => setShowCuisineSuggestions(false), 120)
+                }}
+                placeholder="Cuisine type"
+                autoComplete="off"
+              />
+              {showCuisineSuggestions && filteredCuisineOptions.length > 0 && (
+                <div
                   style={{
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '8px 10px',
-                    background: 'transparent',
-                    border: 'none',
-                    borderBottom: '1px solid var(--card-border)',
-                    cursor: 'pointer',
+                    position: 'absolute',
+                    top: 'calc(100% + 6px)',
+                    left: 0,
+                    right: 0,
+                    maxHeight: '180px',
+                    overflowY: 'auto',
+                    border: '1px solid var(--card-border)',
+                    borderRadius: '10px',
+                    background: 'var(--background-elevated)',
+                    boxShadow: 'var(--shadow-soft)',
+                    zIndex: 20,
                   }}
                 >
-                  {cuisine}
-                </button>
-              ))}
+                  {filteredCuisineOptions.map((cuisine) => (
+                    <button
+                      key={cuisine}
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        setCuisineFilter(cuisine)
+                        setCurrentPage(1)
+                        setShowCuisineSuggestions(false)
+                      }}
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '8px 10px',
+                        background: 'transparent',
+                        border: 'none',
+                        borderBottom: '1px solid var(--card-border)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {cuisine}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
-        <select
-          value={foodPreferenceFilter}
-          onChange={(e) => {
-            setFoodPreferenceFilter(e.target.value)
-            setCurrentPage(1)
-          }}
-        >
-          <option value="">Food Preference</option>
-          <option value="veg">veg</option>
-          <option value="non-veg">non-veg</option>
-        </select>
-        <select
-          value={likesSort}
-          onChange={(e) => {
-            setLikesSort(e.target.value as LikesSort)
-            setCurrentPage(1)
-          }}
-          aria-label="Sort by likes"
-        >
-          <option value="all">Sort by Likes</option>
-          <option value="high">Highest likes</option>
-          <option value="low">Lowest likes</option>
-        </select>
-        <input
-          type="number"
-          min={1}
-          value={maxTotalTimeFilter}
-          onChange={(e) => {
-            setMaxTotalTimeFilter(e.target.value)
-            setCurrentPage(1)
-          }}
-          placeholder="Max prep time"
-        />
-        <button
-          type="button"
-          onClick={clearFilters}
-          style={{
-            borderRadius: '10px',
-            border: '1px solid var(--card-border)',
-            background: 'var(--background-elevated)',
-            cursor: 'pointer',
-          }}
-        >
-          Clear
-        </button>
+            <div>
+              <label htmlFor="filter-diet" style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600 }}>
+                Food preference
+              </label>
+              <select
+                id="filter-diet"
+                value={foodPreferenceFilter}
+                onChange={(e) => {
+                  setFoodPreferenceFilter(e.target.value)
+                  setCurrentPage(1)
+                }}
+                style={{ width: '100%' }}
+              >
+                <option value="" disabled hidden>
+                  Food preference
+                </option>
+                <option value="veg">veg</option>
+                <option value="non-veg">non-veg</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="filter-likes" style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600 }}>
+                Sort by likes
+              </label>
+              <select
+                id="filter-likes"
+                value={likesSort}
+                onChange={(e) => {
+                  setLikesSort(e.target.value as LikesSort)
+                  setCurrentPage(1)
+                }}
+                aria-label="Sort by likes"
+                style={{ width: '100%' }}
+              >
+                <option value="" disabled hidden>
+                  Sort by likes
+                </option>
+                <option value="high">Highest likes</option>
+                <option value="low">Lowest likes</option>
+              </select>
+            </div>
+            <button
+              type="button"
+              onClick={clearFilters}
+              style={{
+                justifySelf: 'start',
+                borderRadius: '10px',
+                border: '1px solid var(--card-border)',
+                background: 'var(--background)',
+                padding: '8px 14px',
+                cursor: 'pointer',
+                fontWeight: 600,
+              }}
+            >
+              Clear filters
+            </button>
+          </div>
+        )}
       </div>
 
       {loadingFeed ? (
