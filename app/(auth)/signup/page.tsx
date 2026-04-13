@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { friendlySignupError } from '@/lib/user-friendly-errors'
 
 export default function SignupPage() {
   const [email, setEmail] = useState('')
@@ -30,7 +31,7 @@ export default function SignupPage() {
     })
 
     if (error) {
-      setMessage(error.message)
+      setMessage(friendlySignupError(error))
     } else {
       setMessage('Success! Check your email to confirm your account.')
     }

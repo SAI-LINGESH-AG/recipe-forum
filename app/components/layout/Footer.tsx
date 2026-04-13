@@ -11,7 +11,7 @@ export default function Footer() {
       opacity: 0.9,
     }}>
       <p>
-        © {currentYear} Sai Lingesh · All rights reserved {' · '}
+        © {currentYear} Recipe Forum · All rights reserved {' · '}
         <a href="mailto:sailingesh664@gmail.com" style={{ color: 'inherit', textDecoration: 'none' }}>
           Support
         </a>

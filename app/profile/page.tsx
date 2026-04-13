@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { friendlyProfilesWriteError } from '@/lib/user-friendly-errors'
 
 type Profile = {
   id: string
@@ -121,7 +122,7 @@ export default function ProfilePage() {
     const { error: upsertError } = await supabase.from('profiles').upsert(payload)
 
     if (upsertError) {
-      setError(upsertError.message)
+      setError(friendlyProfilesWriteError(upsertError))
       setSaving(false)
       return
     }
