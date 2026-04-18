@@ -69,6 +69,7 @@ export default function RecipeVideo({ url }: Props) {
     >
       <iframe
         src={resolved.src}
+        sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
         title="Recipe video"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
         allowFullScreen
