@@ -1,6 +1,6 @@
 # Recipe Forum
 
-A simple web app where people can share recipes, view recipe details, and manage their own posts. Think of it like a lightweight community cookbook—create an account, publish a recipe, and edit it later if you need to.
+A simple web app where people can share recipes, view recipe details, and manage their own posts. Think of it like a lightweight community cookbook-create an account, publish a recipe, and edit it later if you need to.
 
 ## What you can do
 
