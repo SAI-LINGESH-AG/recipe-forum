@@ -1,44 +1,34 @@
 # Recipe Forum
 
-A simple web app where people can share recipes, view recipe details, and manage their own posts. Think of it like a lightweight community cookbook-create an account, publish a recipe, and edit it later if you need to.
+Recipe Forum is a community-first space to share recipes, learn from each other, and build a growing collection of dishes-from quick everyday meals to family favorites.
 
-## What you can do
+## Our vision
 
-- **Sign up / log in** to your account
-- **Create recipes** with ingredients, steps, prep/cook time, servings, cuisine type, and difficulty
-- **Edit your own recipes** (others can’t edit your posts)
-- **Optional video link support** (YouTube/Vimeo/Drive/direct links are handled safely)
-- **Forgot password / reset password** flow via email
+- **Make cooking approachable**: simple recipes, clear steps, and helpful details.
+- **Celebrate community knowledge**: everyone has something valuable to share.
+- **Grow together**: improve the platform continuously with feedback and contributions.
 
-## Tech overview (plain English)
+## What you can do here
 
-- **Frontend + backend**: built with [Next.js](https://nextjs.org/) (React)
-- **Auth & data**: powered by [Supabase](https://supabase.com/) (login, sessions, database)
-- **Deployment**: works well on platforms like Vercel
+- **Share your recipes** with ingredients and step-by-step instructions
+- **Explore recipes** posted by the community
+- **Improve your posts over time** by editing and refining details
+- **Attach optional video links** to make recipes easier to follow
 
-## Run it locally
+## How you can collaborate
 
-Install dependencies and start the app:
+There are many ways to help, even if you’re not writing code:
 
-```bash
-npm install
-npm run dev
-```
+- **Suggest features**: share ideas that make the app more useful for home cooks
+- **Report issues**: if something feels off, describe what you expected vs what happened
+- **Improve content**: propose better wording, recipe fields, validation, and UX polish
+- **Contribute code**: small fixes, UI improvements, performance, accessibility, and security
 
-## Build for production
+## How we grow together
 
-```bash
-npm run build
-npm run start
-```
-
-## Environment variables
-
-This project expects these environment variables to be set (locally and/or in your hosting provider):
-
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `NEXT_PUBLIC_SITE_URL` (recommended for production, used for auth redirect URLs)
+- **Keep it welcoming**: assume good intent and help each other learn
+- **Prefer small changes**: small, reviewable improvements are easier to ship regularly
+- **Document decisions**: when we change behavior, we explain the “why” so the project stays maintainable
 
 ## Contact
 
