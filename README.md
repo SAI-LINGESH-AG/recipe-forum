@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Recipe Forum
 
-## Getting Started
+A simple web app where people can share recipes, view recipe details, and manage their own posts. Think of it like a lightweight community cookbook—create an account, publish a recipe, and edit it later if you need to.
 
-First, run the development server:
+## What you can do
+
+- **Sign up / log in** to your account
+- **Create recipes** with ingredients, steps, prep/cook time, servings, cuisine type, and difficulty
+- **Edit your own recipes** (others can’t edit your posts)
+- **Optional video link support** (YouTube/Vimeo/Drive/direct links are handled safely)
+- **Forgot password / reset password** flow via email
+
+## Tech overview (plain English)
+
+- **Frontend + backend**: built with [Next.js](https://nextjs.org/) (React)
+- **Auth & data**: powered by [Supabase](https://supabase.com/) (login, sessions, database)
+- **Deployment**: works well on platforms like Vercel
+
+## Run it locally
+
+Install dependencies and start the app:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Build for production
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run build
+npm run start
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Environment variables
 
-## Learn More
+This project expects these environment variables to be set (locally and/or in your hosting provider):
 
-To learn more about Next.js, take a look at the following resources:
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_SITE_URL` (recommended for production, used for auth redirect URLs)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Contact
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Sai Lingesh**: [LinkedIn](https://www.linkedin.com/in/sai-lingesh)
